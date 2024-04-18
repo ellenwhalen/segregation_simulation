@@ -1,4 +1,5 @@
 import random as r
+import graphics as g
 
 DIM = 20
 EMPTY = 10
@@ -10,77 +11,29 @@ squares_to_fill = round(total_squares - (total_squares * (EMPTY/100)))
 red_squares = round(squares_to_fill * (PERCENT_RED/100))
 blue_squares = squares_to_fill - red_squares
 
-class Agent:
-    _row = int
-    _col = int
-    _name = str
-    _dim = int
-    _grid = list[list[str]]
-    _satisfied = bool
-    _moving = bool
+class Square:
+    _name: str
+    _has_moved: bool
 
-    def __init__(self, row: int, col: int, name: str, dim: int, grid: list[list[str]]):
-        _row = row
-        _col = col
-        _name = name
-        _dim = dim
-        _grid = grid
-        _satisfied = True
-        _moving = False
-
-    @property
-    def row(self):
-        return self._row
-    
-    @property
-    def col(self):
-        return self._col
+    def __init__(self, name: str):
+        self._name = name
+        self._has_moved = False
     
     @property
     def name(self):
         return self._name
     
     @property
-    def dim(self):
-        return self._dim
+    def has_moved(self):
+        return self._has_moved
     
-    @property
-    def grid(self):
-        return self._grid
-    
-    @property
-    def satisfied(self):
-        return self._satisfied
-    
-    @property
-    def moving(self):
-        return self._moving
-    
-    def is_satisfied(self):
-        """Checks to see if the Agent is satisfied in its current postiion."""
-        box = Box(self.row, self.col, self.dim)
-        number_similar = 0
-        for i in box.row_range():
-            for j in box.col_range():
-                if grid[i][j] == self.name:     # minor bug here - need to also count "" in satisfied count
-                    number_similar += 1
-        percent_similar = ((number_similar - 1)/(box.total_range() - 1)) * 100  # need to sub 1 from both to omit counting self
-        if percent_similar >= SIMILAR:
-            self._satisfied = True
-        else:
-            self._satisfied = False
-            self._moving = True
-
-    def move(self, row, col):
-        """Moves the Agent to a new row and col position."""
-        self._row = row
-        self._col = col
+    def set_name(self, new_name: str):
+        """Sets the name of the square."""
+        self._name = new_name 
 
     def __str__(self):
-        return "R: " + str(row) + " C: " + str(col) 
-        
-
-
+        return "'" + self.name + "'"
+    
 class Box:
     _min_row = int
     _max_row = int
@@ -124,47 +77,145 @@ class Box:
             for j in self.col_range():
                 total += 1
         return total
+
+class Grid:
+    _dim: int 
+    _grid: list[list[Square]]
+    _round: int
+    _win: g.GraphWin
+
+    def __init__(self, dim, red_squares, blue_squares): # possiby should pass in the real constants and then write up a method that calcs these
+        self._dim = dim
+        self._grid = []
+        self._round = 0
+        self._win = g.GraphWin("Segregation Simulation", 800, 800, autoflush=False)
+
+        # initializing to Squares with name ''
+        for i in range(self._dim):
+            row = [Square('')]
+            for j in range(self._dim - 1):
+                row += [Square('')]
+            self._grid.append(row)
+        
+        # inserting X's representing red squares
+        i = 0
+        while i < red_squares:
+            row = r.randint(1, dim)
+            col = r.randint(1, dim)
+            if (self._grid[row - 1][col - 1]).name == "": 
+                self.place_char(row - 1, col - 1, "X")
+                i += 1
+        
+        # inserting O's representing blue squares
+        i = 0
+        while i < blue_squares:
+            row = r.randint(1, dim)
+            col = r.randint(1, dim)
+            if (self._grid[row - 1][col - 1]).name == "": 
+                self.place_char(row - 1, col - 1, "O")
+                i += 1
+        
+        self.draw_grid()
+
+
+    @property
+    def grid(self):
+        return self._grid
     
+    @property
+    def dim(self):
+        return self._dim
+    
+    @property
+    def round(self):
+        return self._round
+    
+    @property
+    def win(self):
+        return self._win
 
-grid = []
-for i in range(DIM):
-    grid.append([""] * DIM)
+    def place_char(self, row: int, col: int, char: str):
+        """Places an 'X', 'O' or '' on the grid."""
+        # maybe write error message if you somehow try to insert a char that isnt X or O
+        (self._grid[row][col]).set_name(char) 
 
-i = 0
-while i < red_squares:
-    row = r.randint(1, DIM)
-    col = r.randint(1, DIM)
-    if grid[row - 1][col - 1] == "": 
-        placeholder_agent = Agent(row - 1, col - 1, "X", DIM, grid)
-        grid[row - 1][col - 1] = placeholder_agent
-        i += 1
+    def is_square_satisfied(self, row: int, col: int) -> bool:
+        """Checks to see if a Square at [row][col] is satisfied."""
+        box_around_square = Box(row, col, self._dim)
+        square_name = self.grid[row][col].name
+        num_similar = 0
+        for i in box_around_square.row_range():
+            for j in box_around_square.col_range():
+                if self.grid[i][j].name == '' or self.grid[i][j].name == square_name:
+                    num_similar += 1
+        percent_similar = ((num_similar - 1)/(box_around_square.total_range() - 1)) * 100
+        # ^need to subtract 1 from both num_similar and total_range to avoid counting the square we're checking
+        if percent_similar >= SIMILAR:      # again: should i pass this in??
+            return True
+        return False
 
-i = 0
-while i < blue_squares:
-    row = r.randint(1, DIM)
-    col = r.randint(1, DIM)
-    if grid[row - 1][col - 1] == "": 
-        placeholder_agent = Agent(row - 1, col - 1, "O", DIM, grid)
-        grid[row - 1][col - 1] = placeholder_agent
-        i += 1
+    def is_grid_satisfied(self) -> bool:
+        """Checks to see if the grid is satisfied. If not, takes one round of steps."""
+        # making sure all squares start out not having the has_moved attribute
+        for i in range(self.dim):
+            for j in range(self.dim):
+                self.grid[i][j]._has_moved = False
+        
+        grid_is_satisfied = True
+        for i in range(self.dim):
+            for j in range(self.dim):
+                if self.grid[i][j].name != '':
+                    square_satisfied = self.is_square_satisfied(i, j)
+                    if square_satisfied == False:   
+                        grid_is_satisfied = False   
+                        if self.grid[i][j].has_moved == False:  
+                            square_moving = self.grid[i][j]    
+                            self.move_square(i, j)              
+                            square_moving._has_moved = True
+        self._round += 1
+        self.draw_grid()
+        if grid_is_satisfied == True:
+            self.win.getMouse()
+        return grid_is_satisfied
 
-print(grid)
+    def move_square(self, row: int, col: int):
+        """Moves one square to a random empty space in the grid."""
+        square_moved = False
+        while square_moved == False:
+            new_row = r.randint(1, self.dim) - 1
+            new_col = r.randint(1, self.dim) - 1
+            if self.grid[new_row][new_col].name == '':
+                this_empty_square = self.grid[new_row][new_col]
+                self.grid[new_row][new_col] = self.grid[row][col]
+                self.grid[row][col] = this_empty_square
+                square_moved = True
+    
+    def draw_grid(self):
+        """Draws the grid."""
+        self.win.setBackground("lightgray")
+        self.win.setCoords(0, 0, self.dim, self.dim)
+        for i in range(self.dim):
+            line = g.Line(g.Point(0, i), g.Point(self.dim, i))
+            line.draw(self.win)
+            line = g.Line(g.Point(i, 0), g.Point(i, self.dim))
+            line.draw(self.win)
+        for row in range(self.dim):
+            for col in range(self.dim):
+                square = g.Rectangle(g.Point(col, row), g.Point(col + 1, row + 1))
+                if self.grid[row][col].name == "X":
+                    square.setFill("red")
+                elif self.grid[row][col].name == "O":
+                    square.setFill("blue")
+                else:
+                    square.setFill("lightgray")
+                square.draw(self.win)
+        g.update(5)
+        #self.win.getMouse()
 
-""" 
-test_agent = Agent(0, 0, DIM, grid)
-print(test_agent.name)
-print(test_agent.satisfied)
+            
+my_grid = Grid(DIM, red_squares, blue_squares)
 
-print(test_agent)
-"""
-
-"""
-for i in range(DIM):
-    for j in range(DIM):
-        if grid[i][j] != "":
-            placeholder_agent = Agent(i, j, DIM, grid)
-            agent_grid[i][j] = placeholder_agent
-             """
-
-print(grid[0][0])
-
+grid_satisfied = False
+while grid_satisfied == False:
+    grid_satisfied = my_grid.is_grid_satisfied()
+print(my_grid.round)
