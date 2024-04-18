@@ -1,15 +1,7 @@
 import random as r
 import graphics as g
 
-DIM = 20
-EMPTY = 10
-PERCENT_RED = 50
-SIMILAR = 30
 
-total_squares = DIM * DIM
-squares_to_fill = round(total_squares - (total_squares * (EMPTY/100)))
-red_squares = round(squares_to_fill * (PERCENT_RED/100))
-blue_squares = squares_to_fill - red_squares
 
 class Square:
     _name: str
@@ -83,39 +75,46 @@ class Grid:
     _grid: list[list[Square]]
     _round: int
     _win: g.GraphWin
+    _similar: int
+    _red_squares: int
+    _blue_squares: int
 
-    def __init__(self, dim, red_squares, blue_squares): # possiby should pass in the real constants and then write up a method that calcs these
+    def __init__(self, dim, empty, percent_red, similar): 
         self._dim = dim
         self._grid = []
         self._round = 0
         self._win = g.GraphWin("Segregation Simulation", 800, 800, autoflush=False)
+        self._similar = similar
 
-        # initializing to Squares with name ''
-        for i in range(self._dim):
+        total_squares = self.dim * self.dim
+        squares_to_fill = round(total_squares - (total_squares * (empty/100)))
+        self._red_squares = round(squares_to_fill * (percent_red/100))
+        self._blue_squares = squares_to_fill - self.red_squares
+
+        # initializing grid to Squares with name ''
+        for i in range(self.dim):
             row = [Square('')]
-            for j in range(self._dim - 1):
+            for j in range(self.dim - 1):
                 row += [Square('')]
             self._grid.append(row)
         
         # inserting X's representing red squares
         i = 0
-        while i < red_squares:
+        while i < self.red_squares:
             row = r.randint(1, dim)
             col = r.randint(1, dim)
-            if (self._grid[row - 1][col - 1]).name == "": 
+            if (self._grid[row - 1][col - 1]).name == '': 
                 self.place_char(row - 1, col - 1, "X")
                 i += 1
         
         # inserting O's representing blue squares
         i = 0
-        while i < blue_squares:
+        while i < self.blue_squares:
             row = r.randint(1, dim)
             col = r.randint(1, dim)
-            if (self._grid[row - 1][col - 1]).name == "": 
+            if (self._grid[row - 1][col - 1]).name == '': 
                 self.place_char(row - 1, col - 1, "O")
                 i += 1
-        
-        self.draw_grid()
 
 
     @property
@@ -133,6 +132,18 @@ class Grid:
     @property
     def win(self):
         return self._win
+    
+    @property
+    def similar(self):
+        return self._similar
+    
+    @property
+    def red_squares(self):
+        return self._red_squares
+    
+    @property
+    def blue_squares(self):
+        return self._blue_squares
 
     def place_char(self, row: int, col: int, char: str):
         """Places an 'X', 'O' or '' on the grid."""
@@ -150,7 +161,7 @@ class Grid:
                     num_similar += 1
         percent_similar = ((num_similar - 1)/(box_around_square.total_range() - 1)) * 100
         # ^need to subtract 1 from both num_similar and total_range to avoid counting the square we're checking
-        if percent_similar >= SIMILAR:      # again: should i pass this in??
+        if percent_similar >= self.similar:
             return True
         return False
 
@@ -164,7 +175,7 @@ class Grid:
         grid_is_satisfied = True
         for i in range(self.dim):
             for j in range(self.dim):
-                if self.grid[i][j].name != '':
+                if self.grid[i][j].name != '':      # skip empty squares
                     square_satisfied = self.is_square_satisfied(i, j)
                     if square_satisfied == False:   
                         grid_is_satisfied = False   
@@ -210,12 +221,19 @@ class Grid:
                     square.setFill("lightgray")
                 square.draw(self.win)
         g.update(5)
-        #self.win.getMouse()
 
-            
-my_grid = Grid(DIM, red_squares, blue_squares)
+
+DIM = 20            # Dimension of the grid
+EMPTY = 10          # Percent of the grid left empty
+PERCENT_RED = 50    # Percent of squares that are red 
+SIMILAR = 30        # Percent similarity that squares will tolerate
+
+"""
+my_grid = Grid(DIM, EMPTY, PERCENT_RED, SIMILAR)
 
 grid_satisfied = False
 while grid_satisfied == False:
     grid_satisfied = my_grid.is_grid_satisfied()
 print(my_grid.round)
+
+"""
