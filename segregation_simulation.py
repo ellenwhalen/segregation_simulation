@@ -80,6 +80,10 @@ class Grid:
     _blue_squares: int
 
     def __init__(self, dim, empty, percent_red, similar): 
+        if empty == 100:
+            raise ValueError("Empty percent must be lower than 100.")
+        if empty == 0:
+            raise ValueError("Empty percent must be higher than 0.")
         self._dim = dim
         self._grid = []
         self._round = 0
@@ -147,7 +151,9 @@ class Grid:
 
     def place_char(self, row: int, col: int, char: str):
         """Places an 'X', 'O' or '' on the grid."""
-        # maybe write error message if you somehow try to insert a char that isnt X or O
+        if char != 'X' and char != 'O' and char != '':
+            raise ValueError("Squares can only be named 'X', 'O' or ''.")
+
         (self._grid[row][col]).set_name(char) 
 
     def is_square_satisfied(self, row: int, col: int) -> bool:
@@ -228,7 +234,7 @@ EMPTY = 10          # Percent of the grid left empty
 PERCENT_RED = 50    # Percent of squares that are red 
 SIMILAR = 30        # Percent similarity that squares will tolerate
 
-"""
+
 my_grid = Grid(DIM, EMPTY, PERCENT_RED, SIMILAR)
 
 grid_satisfied = False
@@ -236,4 +242,3 @@ while grid_satisfied == False:
     grid_satisfied = my_grid.is_grid_satisfied()
 print(my_grid.round)
 
-"""
