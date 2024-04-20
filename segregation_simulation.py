@@ -88,6 +88,8 @@ class Grid:
         self._grid = []
         self._round = 0
         self._win = g.GraphWin("Segregation Simulation", 800, 800, autoflush=False)
+        self.win.setBackground("lightgray")
+        self.win.setCoords(0, 0, self.dim, self.dim)
         self._similar = similar
 
         total_squares = self.dim * self.dim
@@ -119,7 +121,6 @@ class Grid:
             if (self._grid[row - 1][col - 1]).name == '': 
                 self.place_char(row - 1, col - 1, "O")
                 i += 1
-
 
     @property
     def grid(self):
@@ -191,8 +192,6 @@ class Grid:
                             square_moving._has_moved = True
         self._round += 1
         self.draw_grid()
-        if grid_is_satisfied == True:
-            self.win.getMouse()
         return grid_is_satisfied
 
     def move_square(self, row: int, col: int):
@@ -209,8 +208,6 @@ class Grid:
     
     def draw_grid(self):
         """Draws the grid."""
-        self.win.setBackground("lightgray")
-        self.win.setCoords(0, 0, self.dim, self.dim)
         for i in range(self.dim):
             line = g.Line(g.Point(0, i), g.Point(self.dim, i))
             line.draw(self.win)
@@ -235,10 +232,14 @@ PERCENT_RED = 50    # Percent of squares that are red
 SIMILAR = 30        # Percent similarity that squares will tolerate
 
 
+
 my_grid = Grid(DIM, EMPTY, PERCENT_RED, SIMILAR)
 
 grid_satisfied = False
 while grid_satisfied == False:
     grid_satisfied = my_grid.is_grid_satisfied()
-print(my_grid.round)
 
+
+print("It took " + str(my_grid.round) + " rounds to satisfy all squares.")
+my_grid.win.getMouse()
+my_grid.win.close()
