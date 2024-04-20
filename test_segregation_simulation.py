@@ -61,17 +61,21 @@ def test_weird_init_corner_cases():
     assert str(excinfo.value) == "Empty percent must be higher than 0." 
     
 
-def test_rounds_monochrome_grid():
+def test_is_grid_satisfied():
     dim = 20
     empty = 30
     percent_red = 100
     similar = 30
     red_grid = Grid(dim, empty, percent_red, similar)
-    # it takes 0 rounds to organize a 100% red or blue grid
-    assert red_grid.round == 0             
+    # it takes 1 round (the starting round of checking) to organize a 100% red or blue grid
+    satisfied = red_grid.is_grid_satisfied()
+    assert satisfied == True
+    assert red_grid.round == 1           
     percent_red = 0
     blue_grid = Grid(dim, empty, percent_red, similar)
-    assert blue_grid.round == 0
+    satisfied = blue_grid.is_grid_satisfied()
+    assert satisfied == True
+    assert blue_grid.round == 1
 
 def test_place_char():
     grid = Grid(20, 10, 50, 30)
@@ -95,3 +99,26 @@ def test_is_square_satisfied():
     grid.place_char(0, 1, 'X')
     grid.place_char(1, 1, 'X')
     assert grid.is_square_satisfied(0, 0) == False
+    grid = Grid(20, 10, 50, 50)
+    grid.place_char(1, 1, 'X')
+    grid.place_char(0, 1, 'X')
+    grid.place_char(0, 0, '')
+    grid.place_char(1, 0, 'X')
+    grid.place_char(2, 0, 'X')
+    grid.place_char(2, 1, 'O')
+    grid.place_char(2, 2, 'O')
+    grid.place_char(1, 2, 'O')
+    grid.place_char(0, 2, 'O')
+    assert grid.is_square_satisfied(1, 1) == True
+    grid.place_char(1, 0, 'O')
+    assert grid.is_square_satisfied(1, 1) == False
+
+
+def test_move_square():
+    # takes a while to run - made the grid 10x10 so there's slightly fewer
+    # squares for it to check at random
+    grid = Grid(10, 10, 100, 30) # grid starts out 100% red
+    grid.place_char(0, 0, '')
+    grid.move_square(1, 1)
+    assert grid.grid[0][0].name == 'X'
+    assert grid.grid[1][1].name == ''
